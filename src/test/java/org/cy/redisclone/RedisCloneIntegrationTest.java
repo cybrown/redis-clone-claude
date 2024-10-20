@@ -102,10 +102,30 @@ public class RedisCloneIntegrationTest {
     }
 
     @Test
+    void testQuit() {
+        String ok = syncCommands.quit();
+        assertEquals("OK", ok);
+    }
+
+    @Test
     void testInfo() {
         String info = syncCommands.info();
         assertNotNull(info);
         assertTrue(info.contains("redis_version"));
         assertTrue(info.contains("connected_clients"));
+    }
+
+    @Test
+    void testClientSetName() {
+        String result = syncCommands.clientSetname("TestClient");
+        assertEquals("OK", result);
+    }
+
+    @Test
+    void testClientList() {
+        syncCommands.clientSetname("TestClient");
+        String clientList = syncCommands.clientList();
+        assertNotNull(clientList);
+        assertTrue(clientList.contains("name=TestClient"));
     }
 }

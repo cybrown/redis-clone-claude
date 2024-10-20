@@ -4,6 +4,68 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RESPHandler {
+    private static int lastParsedIndex;
+
+    public static List<Object> parseRequest(String input) throws IllegalArgumentException {
+        lastParsedIndex = 0;
+        List<Object> parsed = new ArrayList<>();
+        String[] lines = input.split("\r\n");
+        for (int i = 0; i < lines.length; i++) {
+            if (lines[i].isEmpty()) {
+                lastParsedIndex += 2; // Count the \r\n
+                continue;
+            }
+            char type = lines[i].charAt(0);
+            String value = lines[i].substring(1);
+            switch (type) {
+                case '*':
+                    int arrayLength = Integer.parseInt(value);
+                    List<Object> array = new ArrayList<>();
+                    for (int j = 0; j < arrayLength; j++) {
+                        if (++i >= lines.length) {
+                            throw new IllegalArgumentException("Incomplete RESP array");
+                        }
+                        array.add(parseBulkString(lines, i));
+                        if (lines[i].startsWith("$") && !lines[i].equals("$-1")) {
+                            i++;
+                        }
+                    }
+                    parsed.add(array);
+                    break;
+                case '+':
+                case ':':
+                case '$':
+                    parsed.add(parseBulkString(lines, i));
+                    if (type == '$' && !value.equals("-1")) {
+                        i++;
+                    }
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported RESP type: " + type);
+            }
+            lastParsedIndex = input.indexOf("\r\n", lastParsedIndex) + 2;
+        }
+        return parsed;
+    }
+
+    private static String parseBulkString(String[] lines, int i) throws IllegalArgumentException {
+        if (lines[i].startsWith("$")) {
+            int length = Integer.parseInt(lines[i].substring(1));
+            if (length == -1) {
+                return null;
+            }
+            if (i + 1 >= lines.length) {
+                throw new IllegalArgumentException("Incomplete bulk string");
+            }
+            return lines[i + 1];
+        } else {
+            return lines[i].substring(1);
+        }
+    }
+
+    public static int getLastParsedIndex() {
+        return lastParsedIndex;
+    }
 
     public static String formatResponse(Object response) {
         StringBuilder sb = new StringBuilder();
@@ -38,59 +100,5 @@ public class RESPHandler {
             throw new IllegalArgumentException("Unsupported response type: " + response.getClass());
         }
         return sb.toString();
-    }
-
-    public static List<Object> parseRequest(String input) throws IllegalArgumentException {
-        List<Object> parsed = new ArrayList<>();
-        String[] lines = input.split("\r\n");
-        for (int i = 0; i < lines.length; i++) {
-            if (lines[i].isEmpty()) {
-                continue;
-            }
-            char type = lines[i].charAt(0);
-            String value = lines[i].substring(1);
-            switch (type) {
-                case '*':
-                    int arrayLength = Integer.parseInt(value);
-                    List<Object> array = new ArrayList<>();
-                    for (int j = 0; j < arrayLength; j++) {
-                        if (++i >= lines.length) {
-                            throw new IllegalArgumentException("Incomplete RESP array");
-                        }
-                        array.add(parseBulkString(lines, i));
-                        if (lines[i].startsWith("$") && !lines[i].equals("$-1")) {
-                            i++;
-                        }
-                    }
-                    parsed.add(array);
-                    break;
-                case '+':
-                case ':':
-                case '$':
-                    parsed.add(parseBulkString(lines, i));
-                    if (type == '$' && !value.equals("-1")) {
-                        i++;
-                    }
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported RESP type: " + type);
-            }
-        }
-        return parsed;
-    }
-
-    private static String parseBulkString(String[] lines, int i) throws IllegalArgumentException {
-        if (lines[i].startsWith("$")) {
-            int length = Integer.parseInt(lines[i].substring(1));
-            if (length == -1) {
-                return null;
-            }
-            if (i + 1 >= lines.length) {
-                throw new IllegalArgumentException("Incomplete bulk string");
-            }
-            return lines[i + 1];
-        } else {
-            return lines[i].substring(1);
-        }
     }
 }

@@ -8,6 +8,7 @@ Key features include:
 - Basic Redis commands: GET, SET, DEL, KEYS
 - INFO command for server statistics
 - PING command for connection testing
+- CLIENT command for client information and management
 - RESP (Redis Serialization Protocol) support
 
 This project serves as an educational tool to understand the fundamentals of Redis and network programming in Java.
@@ -56,7 +57,7 @@ To run the integration tests, use the following Maven command:
 mvn test
 ```
 
-These tests will start the server, run various commands using the Lettuce Redis client, and verify the results.
+These tests will start the server on a random available port, run various commands using the Lettuce Redis client, and verify the results. Using a random port ensures that the tests don't conflict with any existing Redis servers or other processes that might be using the default Redis port.
 
 ## Connecting to the Server
 
@@ -76,6 +77,9 @@ Or you can use a Redis client library in your preferred programming language.
 - `KEYS pattern`: Find all keys matching the given pattern
 - `INFO`: Get information and statistics about the server
 - `PING`: Test if the server is responsive
+- `QUIT`: Close current connection
+- `CLIENT LIST`: Get information about connected clients
+- `CLIENT SETNAME name`: Set the name of the current connection
 
 ## Project Structure
 
@@ -83,7 +87,7 @@ Or you can use a Redis client library in your preferred programming language.
 - `org.cy.redisclone.RedisServer`: Main server class
 - `org.cy.redisclone.RedisLikeService`: Core data storage and retrieval logic
 - `org.cy.redisclone.RESPHandler`: RESP protocol parser and formatter
-- `org.cy.redisclone.RedisCloneIntegrationTest`: Integration tests for the Redis clone server
+- `org.cy.redisclone.RedisCloneIntegrationTest`: Integration tests for the Redis clone server, using a random port for isolation
 
 ## Dependencies
 
